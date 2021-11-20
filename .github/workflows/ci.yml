@@ -1,0 +1,99 @@
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+name: CI
+
+env:
+  RUSTFLAGS: -Dwarnings
+  RUST_BACKTRACE: full
+
+jobs:
+  pass:
+    name: Everything okay
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - test
+      - fmt
+      - clippy
+    steps:
+      - run: exit 0
+  build:
+    name: "Build"
+    runs-on: ${{ matrix.os}}
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+          - linux-latest
+          - macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install rust
+        run: rustup update nightly
+      - uses: Swatinem/rust-cache@v1
+      - name: Build
+        run: cargo build
+      - name: Build --release
+        run: cargo build --release
+      - name: Build benches
+        run: cargo build --benches
+  test:
+    name: "Run tests"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: 
+          - windows-latest
+          - ubuntu-latest
+          - macos-latest 
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install rust
+        run: rustup update nightly
+      - uses: Swatinem/rust-cache@v1
+      - name: Install Miri
+        run: |
+          set -e
+          rustup component add miri
+          cargo miri setup
+      - name: Install cargo-hack
+        run: cargo install cargo-hack
+      - name: Test --all-features
+        run: cargo test --all-features
+      - name: Test --each-feature
+        run: cargo hack test --each-feature --no-dev-deps
+      - name: Test --feature-powerset
+        run: cargo hack test --feature-powerset --no-dev-deps
+  fmt:
+   name: Run rusfmt
+   runs-on: ubuntu-latest
+   steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        run: rustup update nightly
+      - uses: Swatinem/rust-cache@v1
+      - name: Install rusfmt
+        run: rustup component add rusfmt
+      - name: "Check formatting"
+        # Workaround for rust-lang/cargo#7732
+        run: |
+          if ! rustfmt --check --edition 2018 $(git ls-files '*.rs'); then
+            printf "Please run \`rustfmt --edition 2018 \$(git ls-files '*.rs')\` to fix rustfmt errors.\nSee CONTRIBUTING.md for more details.\n" >&2
+            exit 1
+          fi
+  clippy:
+   name: Run clippy
+   runs-on: ubuntu-latest
+   steps:
+    - uses: actions/checkout@v2
+    - name: Install Rust
+      run: rustup update nightly
+    - uses: Swatinem/rust-cache@v1
+    - name: Install clippy
+      run: rustup component add clippy
+    - name: "Run clippy"
+      run: cargo clippy --all --tests --all-features

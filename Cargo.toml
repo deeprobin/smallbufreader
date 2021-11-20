@@ -1,0 +1,35 @@
+[package]
+name = "smallbufreader"
+version = "0.1.0"
+edition = "2018"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+smallvec = { version = "^1.7.0" }
+
+[dev-dependencies]
+criterion = "^0.3"
+
+[target.'cfg(unix)'.dev-dependencies]
+pprof = { version = "0.6.1", features = ["flamegraph", "criterion"] }
+
+[features]
+const_new = ["smallvec/const_new", "unstable_const_fn_trait_bound"]
+const_generics = ["smallvec/const_generics"]
+union = ["smallvec/union"]
+may_dangle = ["smallvec/may_dangle"]
+
+# Unstable features require rust nightly
+unstable_can_vector = []
+unstable_read_initializer = []
+unstable_const_fn_trait_bound = []
+unstable = ["unstable_can_vector", "unstable_read_initializer", "may_dangle", "union", "const_generics", "const_new"]
+default = ["unstable"]
+
+[[bench]]
+name = "sync_buf_reader_benchmark"
+harness = false
+
+[[bench]]
+name = "sync_small_buf_reader_benchmark"
+harness = false

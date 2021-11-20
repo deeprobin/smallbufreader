@@ -1,0 +1,12 @@
+name: Bug Report
+description: Create a report to help us improve
+labels: ['feature', "untriaged"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Please explain your feature request in detail.
+      placeholder: Description
+    validations:
+      required: true
